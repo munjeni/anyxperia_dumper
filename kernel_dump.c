@@ -144,12 +144,16 @@ struct Elf64_Ehdr {
 extern int gunziper(char *in, char *out);
 extern void untar(FILE *a, const char *path, char *outfolder);
 
-unsigned long swap_uint32(unsigned long val) {
+static uint16_t is_big_endian(void) {
+	return (*(uint16_t *)"\0\xff" < 0x100) ? 1 : 0;
+}
+
+static unsigned long swap_uint32(unsigned long val) {
 	val = ((val << 8) & 0xFF00FF00 ) | ((val >> 8) & 0xFF00FF);
 	return ((val << 16) | (val >> 16)) & 0xffffffff;
 }
 
-unsigned long long swap_uint64(unsigned long long val) {
+static unsigned long long swap_uint64(unsigned long long val) {
 	val = ((val << 8) & 0xFF00FF00FF00FF00ULL) | ((val >> 8) & 0x00FF00FF00FF00FFULL);
 	val = ((val << 16) & 0xFFFF0000FFFF0000ULL) | ((val >> 16) & 0x0000FFFF0000FFFFULL);
 	return ((val << 32) | (val >> 32)) & 0xffffffffffffffffULL;
@@ -260,6 +264,8 @@ int convert_sin_to_elf(char *filein, char *fileout)
 
 	int return_value;
 
+	unsigned short is_be = is_big_endian();
+
 	memset(sin_header, '\0', 1024);
 
 	if ((sin = fopen64(filein, "rb")) == 0) {
@@ -309,16 +315,19 @@ int convert_sin_to_elf(char *filein, char *fileout)
 
 	if (sin_version < 3) {
 		memcpy(&sin_header_sz, sin_header+2, 4);
-		sin_header_sz = swap_uint32(sin_header_sz);
+		if (!is_be)
+			sin_header_sz = swap_uint32(sin_header_sz);
 
 		sin_data_sz = sin_sz - (sin_header_sz + 16);
 	}
 	else {
 		memcpy(&sin_header_sz, sin_header+4, 4);
-		sin_header_sz = swap_uint32(sin_header_sz);
+		if (!is_be)
+			sin_header_sz = swap_uint32(sin_header_sz);
 
 		memcpy(&sin_data_sz, sin_header+0x18, 4);
-		sin_data_sz = swap_uint32(sin_data_sz);
+		if (!is_be)
+			sin_data_sz = swap_uint32(sin_data_sz);
 	}
 
 	printf("Sin header size: 0x%lX\n", sin_header_sz);
@@ -341,7 +350,8 @@ int convert_sin_to_elf(char *filein, char *fileout)
 	{
 		printf("Found MMCF magic string!\n");
 		non_loader = 1;
-		mmcf_h.gptp_len = swap_uint32(mmcf_h.gptp_len);
+		if (!is_be)
+			mmcf_h.gptp_len = swap_uint32(mmcf_h.gptp_len);
 		if (mmcf_h.gptp_len)
 		{
 			printf("GPTP len: 0x%x\n", mmcf_h.gptp_len);
@@ -376,11 +386,13 @@ int convert_sin_to_elf(char *filein, char *fileout)
 						fread_unus_res(&unpacked_data_size, 1, 8, sin);
 						fread_unus_res(&packed_data_size, 1, 8, sin);
 						fread_unus_res(&unpacked_data_offset, 1, 8, sin);
-						data_type_header_size = swap_uint32(data_type_header_size);
-						packed_data_offset = swap_uint64(packed_data_offset);
-						unpacked_data_size = swap_uint64(unpacked_data_size);
-						packed_data_size = swap_uint64(packed_data_size);
-						unpacked_data_offset = swap_uint64(unpacked_data_offset);
+						if (!is_be) {
+							data_type_header_size = swap_uint32(data_type_header_size);
+							packed_data_offset = swap_uint64(packed_data_offset);
+							unpacked_data_size = swap_uint64(unpacked_data_size);
+							packed_data_size = swap_uint64(packed_data_size);
+							unpacked_data_offset = swap_uint64(unpacked_data_offset);
+						}
 						printf("|-- packed data offset: 0x%llx\n", packed_data_offset);
 						printf("|-- unpacked data size: 0x%llx\n", unpacked_data_size);
 						printf("|-- packed data size: 0x%llx\n", packed_data_size);
@@ -469,15 +481,17 @@ int convert_sin_to_elf(char *filein, char *fileout)
 
 						if (parts == 1) {
 							unsigned long long gg;
-							for (gg=0; gg<unpacked_data_size; ++gg) {
-								if (*(unsigned int *)&new_src[gg] == 0x464c457f && gg == 0) {
+							for (gg=0; gg<unpacked_data_size - 4; ++gg) {
+								if (memcmp(new_src+gg, "\x7f\x45\x4c\x46", 4) == 0 && gg == 0) {
 									file_type = 2; /* ELF */
 									printf("|------ Filetype ELF.\n");
 									break;
 								}
-								if (*(unsigned int *)&new_src[gg] == 0x0001ef53) {
+								if (memcmp(new_src+gg, "\x53\xef\x01\x00", 4) == 0) {
 									file_type = 3;  /* EXT4 */
 									ext4_file_size = *(unsigned long long *)&new_src[gg-52] * 4096ULL;
+									if (is_be)
+										ext4_file_size = swap_uint64(ext4_file_size);
 									printf("|------ Found ext4 magic. Ext4 size: 0x%llx\n", ext4_file_size);
 									break;
 								}
@@ -499,10 +513,12 @@ int convert_sin_to_elf(char *filein, char *fileout)
 						fread_unus_res(&packed_data_offset, 1, 8, sin);
 						fread_unus_res(&packed_data_size, 1, 8, sin);
 						fread_unus_res(&unpacked_data_offset, 1, 8, sin);
-						data_type_header_size = swap_uint32(data_type_header_size);
-						packed_data_offset = swap_uint64(packed_data_offset);
-						packed_data_size = swap_uint64(packed_data_size);
-						unpacked_data_offset = swap_uint64(unpacked_data_offset);
+						if (!is_be) {
+							data_type_header_size = swap_uint32(data_type_header_size);
+							packed_data_offset = swap_uint64(packed_data_offset);
+							packed_data_size = swap_uint64(packed_data_size);
+							unpacked_data_offset = swap_uint64(unpacked_data_offset);
+						}
 						printf("|-- packed data offset: 0x%llx\n", packed_data_offset);
 						printf("|-- packed data size: 0x%llx\n", packed_data_size);
 						printf("|-- unpacked data offset: 0x%llx\n", unpacked_data_offset);
@@ -562,15 +578,17 @@ int convert_sin_to_elf(char *filein, char *fileout)
 
 						if (parts == 1) {
 							unsigned long long gg;
-							for (gg=0; gg<packed_data_size; ++gg) {
-								if (*(unsigned int *)&temp_buff[gg] == 0x464c457f && gg == 0) {
+							for (gg=0; gg<packed_data_size - 4; ++gg) {
+								if (memcmp(temp_buff+gg, "\x7f\x45\x4c\x46", 4) == 0 && gg == 0) {
 									file_type = 2; /* ELF */
 									printf("|------ Filetype ELF.\n");
 									break;
 								}
-								if (*(unsigned int *)&temp_buff[gg] == 0x0001ef53) {
+								if (memcmp(temp_buff+gg, "\x53\xef\x01\x00", 4) == 0) {
 									file_type = 3;  /* EXT4 */
 									ext4_file_size = *(unsigned long long *)&temp_buff[gg-52] * 4096ULL;
+									if (is_be)
+										ext4_file_size = swap_uint64(ext4_file_size);
 									printf("|------ Found ext4 magic. Ext4 size: 0x%llx\n", ext4_file_size);
 									break;
 								}
@@ -764,6 +782,7 @@ int extract_elf(char *dest, char *in)
 	char *buff;
 	int tmp = 1;
 	int i;
+	unsigned short is_be = is_big_endian();
 
 	unsigned long last_address = 0;
 	unsigned short hdrphnum = 0;
@@ -774,7 +793,7 @@ int extract_elf(char *dest, char *in)
 	struct Elf64_Phdr *phdr64 = NULL;
 
 	unsigned char head[6];
-	int determined = 0;
+	unsigned int determined = 0;
 
 	fi = fopen64(in, "rb");
 	if (fi == NULL) {
@@ -787,6 +806,8 @@ int extract_elf(char *dest, char *in)
 	fseeko64(fi, 0, SEEK_SET);
 	fread_unus_res(head, 1, 6, fi);
 	determined = *(unsigned char *)&head[4];
+	if (is_be)
+		determined = swap_uint32(determined);
 	fseeko64(fi, 0, SEEK_SET);
 
 	if (determined == 2)

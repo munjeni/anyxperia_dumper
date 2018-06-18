@@ -80,6 +80,22 @@
 #include "sparse.h"
 #include "lz4.h"
 
+static unsigned short swap_uint16(unsigned short val)
+{
+	return (val >> 8) | (val << 8);
+}
+
+static unsigned long swap_uint32(unsigned long val) {
+	val = ((val << 8) & 0xFF00FF00 ) | ((val >> 8) & 0xFF00FF);
+	return ((val << 16) | (val >> 16)) & 0xffffffff;
+}
+
+static unsigned long long swap_uint64(unsigned long long val) {
+	val = ((val << 8) & 0xFF00FF00FF00FF00ULL) | ((val >> 8) & 0x00FF00FF00FF00FFULL);
+	val = ((val << 16) & 0xFFFF0000FFFF0000ULL) | ((val >> 16) & 0x0000FFFF0000FFFFULL);
+	return ((val << 32) | (val >> 32)) & 0xffffffffffffffffULL;
+}
+
 static char *basenamee(char *in) {
 	char *ssc;
 	int p = 0;
@@ -132,6 +148,10 @@ static char *basenamee(char *in) {
 #include <assert.h>
 
 #include "zlib.h"
+
+static uint16_t is_big_endian(void) {
+	return (*(uint16_t *)"\0\xff" < 0x100) ? 1 : 0;
+}
 
 #define CHUNK 16384
 
@@ -468,6 +488,7 @@ untar(FILE *a, const char *path, char *outfolder)
 	char tmpp[256];
 	char tmpg[256];
 	unsigned short file_type = 1;
+	unsigned short is_be = is_big_endian();
 
 	printf("Extracting from %s\n", path);
 
@@ -536,6 +557,18 @@ untar(FILE *a, const char *path, char *outfolder)
 						return;
 					}
 
+					if (is_be) {
+						sparseHeader.Magic = swap_uint32(sparseHeader.Magic);
+						sparseHeader.MajorVersion = swap_uint16(sparseHeader.MajorVersion);
+						sparseHeader.MinorVersion = swap_uint16(sparseHeader.MinorVersion);
+						sparseHeader.FileHeaderSize = swap_uint16(sparseHeader.FileHeaderSize);
+						sparseHeader.ChunkHeaderSize = swap_uint16(sparseHeader.ChunkHeaderSize);
+						sparseHeader.BlockSize = swap_uint32(sparseHeader.BlockSize);
+						sparseHeader.TotalBlocks = swap_uint32(sparseHeader.TotalBlocks);
+						sparseHeader.TotalChunks = swap_uint32(sparseHeader.TotalChunks);
+						sparseHeader.ImageChecksum = swap_uint32(sparseHeader.ImageChecksum);
+					}
+
 					if (sparseHeader.Magic != SPARSE_HEADER_MAGIC)
 					{
 						printf("Error, sparseHeader.Magic != 0xED26FF3A, got 0x%08x\n", sparseHeader.Magic);
@@ -601,6 +634,13 @@ untar(FILE *a, const char *path, char *outfolder)
 							fclose(in);
 							fclose(out);
 							return;
+						}
+
+						if (is_be) {
+							chunkHeader.ChunkType = swap_uint16(chunkHeader.ChunkType);
+							//chunkHeader.Reserved = swap_uint16(chunkHeader.Reserved);
+							chunkHeader.ChunkBlocks = swap_uint32(chunkHeader.ChunkBlocks);
+							chunkHeader.ChunkSize = swap_uint32(chunkHeader.ChunkSize);
 						}
 
 						sparse_data_in_sz = chunkHeader.ChunkSize - sparseHeader.ChunkHeaderSize;
@@ -686,25 +726,27 @@ untar(FILE *a, const char *path, char *outfolder)
 									if (j == 0 && !searched)
 									{
 										unsigned int gg;
-										for (gg=0; gg<sparseHeader.BlockSize; ++gg)
+										for (gg=0; gg<sparseHeader.BlockSize - 4; ++gg)
 										{
-											if (*(unsigned int *)&tmp_buff[gg] == 0x464c457f && gg == 0) {
+											if (memcmp(tmp_buff+gg, "\x7f\x45\x4c\x46", 4) == 0 && gg == 0) {
 												file_type = 2; /* ELF */
 												printf("Filetype ELF.\n");
 												break;
 											}
-											else if (*(unsigned int *)&tmp_buff[gg] == 0x0001ef53) {
+											else if (memcmp(tmp_buff+gg, "\x53\xef\x01\x00", 4) == 0) {
 												file_type = 3;  /* EXT4 */
 												ext4_file_size = *(unsigned long long *)&tmp_buff[gg-52] * sparseHeader.BlockSize;
+												if (is_be)
+													ext4_file_size = swap_uint64(ext4_file_size);
 												printf("Found ext4 magic. Ext4 size: 0x%llx\n", ext4_file_size);
 												break;
 											}
-											else if (*(unsigned int *)&tmp_buff[gg] == 0x4d903ceb && gg == 0) {
+											else if (memcmp(tmp_buff+gg, "\xeb\x3c\x90\x4d", 4) == 0 && gg == 0) {
 												file_type = 4; /* MSDOS VFAT */
 												printf("Filetype VFAT.\n");
 												break;
 											}
-											else if (*(unsigned int *)&tmp_buff[gg] == 0x52444e41 && gg == 0) {
+											else if (memcmp(tmp_buff+gg, "\x41\x4e\x44\x52", 4) == 0 && gg == 0) {
 												file_type = 5; /* ANDROID IMG */
 												printf("Filetype VFAT.\n");
 												break;
@@ -916,25 +958,27 @@ untar(FILE *a, const char *path, char *outfolder)
 								if (j == 0 && !searched)
 								{
 									unsigned int gg;
-									for (gg=0; gg<sparse_data_out_sz; ++gg)
+									for (gg=0; gg<sparse_data_out_sz - 4; ++gg)
 									{
-										if (*(unsigned int *)&lz4_tmp_buff[gg] == 0x464c457f && gg == 0) {
+										if (memcmp(lz4_tmp_buff+gg, "\x7f\x45\x4c\x46", 4) == 0 && gg == 0) {
 											file_type = 2; /* ELF */
 											printf("Filetype ELF.\n");
 											break;
 										}
-										else if (*(unsigned int *)&lz4_tmp_buff[gg] == 0x0001ef53) {
+										else if (memcmp(lz4_tmp_buff+gg, "\x53\xef\x01\x00", 4) == 0) {
 											file_type = 3;  /* EXT4 */
 											ext4_file_size = *(unsigned long long *)&lz4_tmp_buff[gg-52] * sparseHeader.BlockSize;
+											if (is_be)
+												ext4_file_size = swap_uint64(ext4_file_size);
 											printf("Found ext4 magic. Ext4 size: 0x%llx\n", ext4_file_size);
 											break;
 										}
-										else if (*(unsigned int *)&lz4_tmp_buff[gg] == 0x4d903ceb && gg == 0) {
+										else if (memcmp(lz4_tmp_buff+gg, "\xeb\x3c\x90\x4d", 4) == 0 && gg == 0) {
 											file_type = 4; /* MSDOS VFAT */
 											printf("Filetype VFAT.\n");
 											break;
 										}
-										else if (*(unsigned int *)&lz4_tmp_buff[gg] == 0x52444e41 && gg == 0) {
+										else if (memcmp(lz4_tmp_buff+gg, "\x41\x4e\x44\x52", 4) == 0 && gg == 0) {
 											file_type = 5; /* ANDROID IMG */
 											printf("Filetype VFAT.\n");
 											break;
