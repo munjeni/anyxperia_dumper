@@ -77,7 +77,7 @@
 #define O_BINARY 0x8000
 #endif
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 
 #if ENABLE_DEBUG
 #define LOG printf
