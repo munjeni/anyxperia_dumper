@@ -77,6 +77,14 @@
 #define O_BINARY 0x8000
 #endif
 
+#define ENABLE_DEBUG 1
+
+#if ENABLE_DEBUG
+#define LOG printf
+#else
+#define LOG(...)
+#endif
+
 #include "sparse.h"
 #include "lz4.h"
 
@@ -605,15 +613,15 @@ untar(FILE *a, const char *path, char *outfolder)
 						return;
 					}
 
-					//printf("Sparse magic: 0x%08X\n", sparseHeader.Magic);
-					//printf("Sparse MajorVersion: 0x%04X\n", sparseHeader.MajorVersion);
-					//printf("Sparse MinorVersion: 0x%04X\n", sparseHeader.MinorVersion);
-					//printf("Sparse FileHeaderSize: 0x%04X\n", sparseHeader.FileHeaderSize);
-					//printf("Sparse ChunkHeaderSize: 0x%04X\n", sparseHeader.ChunkHeaderSize);
-					//printf("Sparse BlockSize: 0x%08X\n", sparseHeader.BlockSize);
-					//printf("Sparse TotalBlocks: 0x%08X\n", sparseHeader.TotalBlocks);
-					//printf("Sparse TotalChunks: 0x%08X\n", sparseHeader.TotalChunks);
-					//printf("Sparse ImageChecksum: 0x%08X\n", sparseHeader.ImageChecksum);
+					LOG("Sparse magic: 0x%08X\n", sparseHeader.Magic);
+					LOG("Sparse MajorVersion: 0x%04X\n", sparseHeader.MajorVersion);
+					LOG("Sparse MinorVersion: 0x%04X\n", sparseHeader.MinorVersion);
+					LOG("Sparse FileHeaderSize: 0x%04X\n", sparseHeader.FileHeaderSize);
+					LOG("Sparse ChunkHeaderSize: 0x%04X\n", sparseHeader.ChunkHeaderSize);
+					LOG("Sparse BlockSize: 0x%08X\n", sparseHeader.BlockSize);
+					LOG("Sparse TotalBlocks: 0x%08X\n", sparseHeader.TotalBlocks);
+					LOG("Sparse TotalChunks: 0x%08X\n", sparseHeader.TotalChunks);
+					LOG("Sparse ImageChecksum: 0x%08X\n", sparseHeader.ImageChecksum);
 
 					while (si < sparseHeader.TotalChunks)
 					{
@@ -646,15 +654,15 @@ untar(FILE *a, const char *path, char *outfolder)
 						sparse_data_in_sz = chunkHeader.ChunkSize - sparseHeader.ChunkHeaderSize;
 						sparse_data_out_sz = chunkHeader.ChunkBlocks * sparseHeader.BlockSize;
 
-						//printf("ChunkHeader ChunkType: 0x%04X\n", chunkHeader.ChunkType);
-						//printf("ChunkHeader Reserved: 0x%04X\n", chunkHeader.Reserved);
-						//printf("ChunkHeader ChunkBlocks: 0x%08X\n", chunkHeader.ChunkBlocks);
-						//printf("ChunkHeader ChunkSize: 0x%08X\n", chunkHeader.ChunkSize);
+						LOG("ChunkHeader ChunkType: 0x%04X\n", chunkHeader.ChunkType);
+						LOG("ChunkHeader Reserved: 0x%04X\n", chunkHeader.Reserved);
+						LOG("ChunkHeader ChunkBlocks: 0x%08X\n", chunkHeader.ChunkBlocks);
+						LOG("ChunkHeader ChunkSize: 0x%08X\n", chunkHeader.ChunkSize);
 
 						switch (chunkHeader.ChunkType)
 						{
 							case CHUNK_TYPE_RAW:
-								//printf("RAW\n\n");
+								LOG("RAW\n\n");
 								for (sk = 0; sk < chunkHeader.ChunkBlocks; ++sk)
 								{
 									if ((tmp_buff = (char *)malloc(sparseHeader.BlockSize + 1)) == NULL) {
@@ -679,7 +687,7 @@ untar(FILE *a, const char *path, char *outfolder)
 									{
 										if (curr_out_poss + sparseHeader.BlockSize <= ext4_file_size)
 										{
-											//printf("RAW=%llX\n", curr_out_poss + sparseHeader.BlockSize);
+											LOG("RAW=%llX\n", curr_out_poss + sparseHeader.BlockSize);
 											bytes_write = fwrite(tmp_buff, 1, sparseHeader.BlockSize, out);
 											if (bytes_write < sparseHeader.BlockSize) {
 												printf("Error in CHUNK_TYPE_RAW, error writing 0x%x bytes from temp_buff, done 0x%lx!\n",
@@ -694,7 +702,7 @@ untar(FILE *a, const char *path, char *outfolder)
 										}
 										else
 										{
-											//printf("RAW=%llX\n", curr_out_poss + (ext4_file_size - curr_out_poss));
+											LOG("RAW=%llX\n", curr_out_poss + (ext4_file_size - curr_out_poss));
 											bytes_write = fwrite(tmp_buff, 1, ext4_file_size - curr_out_poss, out);
 											if (bytes_write < (unsigned long)(ext4_file_size - curr_out_poss)) {
 												printf("Error in CHUNK_TYPE_RAW, error writing 0x%lx bytes from temp_buff, done 0x%lx!\n",
@@ -710,7 +718,7 @@ untar(FILE *a, const char *path, char *outfolder)
 									}
 									else
 									{
-										//printf("RAW=%llX\n", curr_out_poss + sparseHeader.BlockSize);
+										LOG("RAW=%llX\n", curr_out_poss + sparseHeader.BlockSize);
 										bytes_write = fwrite(tmp_buff, 1, sparseHeader.BlockSize, out);
 										if ((unsigned int)bytes_write < sparseHeader.BlockSize) {
 											printf("Error in CHUNK_TYPE_RAW, error writing 0x%x bytes from temp_buff, done 0x%lx!\n", sparseHeader.BlockSize, bytes_write);
@@ -760,7 +768,7 @@ untar(FILE *a, const char *path, char *outfolder)
 								break;
 
 							case CHUNK_TYPE_FILL:
-								//printf("FILL\n\n");
+								LOG("FILL\n\n");
 								if ((tmp_buff = (char *)malloc(sparse_data_in_sz + 1)) == NULL) {
 									printf("Error in CHUNK_TYPE_FILL, error allocating memory of the 0x%lx bytes for temp_buff!\n", sparse_data_in_sz);
 									fclose(f);
@@ -785,7 +793,7 @@ untar(FILE *a, const char *path, char *outfolder)
 									{
 										if (curr_out_poss + sparse_data_in_sz <= ext4_file_size)
 										{
-											//printf("FILL=%llX\n", curr_out_poss + sparse_data_in_sz);
+											LOG("FILL=%llX\n", curr_out_poss + sparse_data_in_sz);
 											bytes_write = fwrite(tmp_buff, 1, sparse_data_in_sz, out);
 											if (bytes_write < sparse_data_in_sz) {
 												printf("Error in CHUNK_TYPE_FILL, error writing 0x%lx bytes from temp_buff, done 0x%lx!\n", sparse_data_in_sz, bytes_write);
@@ -799,7 +807,7 @@ untar(FILE *a, const char *path, char *outfolder)
 										}
 										else
 										{
-											//printf("FILL=%llX\n", curr_out_poss + (ext4_file_size - curr_out_poss));
+											LOG("FILL=%llX\n", curr_out_poss + (ext4_file_size - curr_out_poss));
 											bytes_write = fwrite(tmp_buff, 1, ext4_file_size - curr_out_poss, out);
 											if (bytes_write < (unsigned long)(ext4_file_size - curr_out_poss)) {
 												printf("Error in CHUNK_TYPE_FILL, error writing 0x%lx bytes from temp_buff, done 0x%lx!\n", (unsigned long)(ext4_file_size - curr_out_poss), bytes_write);
@@ -814,7 +822,7 @@ untar(FILE *a, const char *path, char *outfolder)
 									}
 									else
 									{
-										//printf("FILL=%llX\n", curr_out_poss + sparse_data_in_sz);
+										LOG("FILL=%llX\n", curr_out_poss + sparse_data_in_sz);
 										bytes_write = fwrite(tmp_buff, 1, sparse_data_in_sz, out);
 										if (bytes_write < sparse_data_in_sz) {
 											printf("Error in CHUNK_TYPE_FILL, error writing 0x%lx bytes from temp_buff, done 0x%lx!\n", sparse_data_in_sz, bytes_write);
@@ -832,35 +840,35 @@ untar(FILE *a, const char *path, char *outfolder)
 								break;
 
 							case CHUNK_TYPE_DONT_CARE:
-								//printf("DONTCARE\n\n");
+								LOG("DONTCARE\n\n");
 								if (ext4_file_size)
 								{
 									if (curr_out_poss + sparse_data_out_sz <= ext4_file_size)
 									{
-										//printf("DONTCARE=%llX\n", curr_out_poss + sparse_data_out_sz);
+										LOG("DONTCARE=%llX\n", curr_out_poss + sparse_data_out_sz);
 										fseeko64(out, curr_out_poss + sparse_data_out_sz, SEEK_SET);
 									}
 									else
 									{
-										//printf("DONTCARE=%llX\n", curr_out_poss + (ext4_file_size - curr_out_poss));
+										LOG("DONTCARE=%llX\n", curr_out_poss + (ext4_file_size - curr_out_poss));
 										fseeko64(out, curr_out_poss + (ext4_file_size - curr_out_poss), SEEK_SET);
 									}
 								}
 								else
 								{
-									//printf("DONTCARE=%llX\n", curr_out_poss + sparse_data_out_sz);
+									LOG("DONTCARE=%llX\n", curr_out_poss + sparse_data_out_sz);
 									fseeko64(out, curr_out_poss + sparse_data_out_sz, SEEK_SET);
 								}
 
 								break;
 
 							case CHUNK_TYPE_CRC32:
-								//printf("CRC32\n\n");
+								LOG("CRC32\n\n");
 								fseeko64(in, sparse_data_in_sz, SEEK_CUR);
 								break;
 
 							case CHUNK_TYPE_LZ4:
-								//printf("LZ4\n\n");
+								LOG("LZ4\n\n");
 								if ((tmp_buff = (char *)malloc(sparse_data_in_sz + 1)) == NULL) {
 									printf("Error in CHUNK_TYPE_LZ4, error allocating memory of the 0x%lx bytes for temp_buff!\n", sparse_data_in_sz);
 									fclose(f);
@@ -910,7 +918,7 @@ untar(FILE *a, const char *path, char *outfolder)
 								{
 									if (curr_out_poss + sparse_data_out_sz <= ext4_file_size)
 									{
-										//printf("LZ4=%llX\n", curr_out_poss + sparse_data_out_sz);
+										LOG("LZ4=%llX\n", curr_out_poss + sparse_data_out_sz);
 										bytes_write = fwrite(lz4_tmp_buff, 1, sparse_data_out_sz, out);
 										if (bytes_write < sparse_data_out_sz) {
 											printf("Error in CHUNK_TYPE_LZ4, error writing 0x%lx bytes from lz4_temp_buff, done 0x%lx!\n", sparse_data_out_sz, bytes_write);
@@ -925,7 +933,7 @@ untar(FILE *a, const char *path, char *outfolder)
 									}
 									else
 									{
-										//printf("LZ4=%llX\n", curr_out_poss + (ext4_file_size - curr_out_poss));
+										LOG("LZ4=%llX\n", curr_out_poss + (ext4_file_size - curr_out_poss));
 										bytes_write = fwrite(lz4_tmp_buff, 1, ext4_file_size - curr_out_poss, out);
 										if (bytes_write < (unsigned long)(ext4_file_size - curr_out_poss)) {
 											printf("Error in CHUNK_TYPE_LZ4, error writing 0x%lx bytes from lz4_temp_buff, done 0x%lx!\n", (unsigned long)(ext4_file_size - curr_out_poss), bytes_write);
@@ -941,7 +949,7 @@ untar(FILE *a, const char *path, char *outfolder)
 								}
 								else
 								{
-									//printf("LZ4=%llX\n", curr_out_poss + sparse_data_out_sz);
+									LOG("LZ4=%llX\n", curr_out_poss + sparse_data_out_sz);
 									bytes_write = fwrite(lz4_tmp_buff, 1, sparse_data_out_sz, out);
 									if (bytes_write < sparse_data_out_sz) {
 										printf("Error in CHUNK_TYPE_LZ4, error writing 0x%lx bytes from lz4_temp_buff, done 0x%lx!\n", sparse_data_out_sz, bytes_write);
