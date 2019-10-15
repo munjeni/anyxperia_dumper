@@ -748,7 +748,7 @@ untar(FILE *a, const char *path, char *outfolder)
 											}
 											else if (memcmp(tmp_buff+gg, "\x41\x4e\x44\x52", 4) == 0 && gg == 0) {
 												file_type = 5; /* ANDROID IMG */
-												printf("Filetype VFAT.\n");
+												printf("Filetype IMG.\n");
 												break;
 											}
 										}
@@ -980,7 +980,7 @@ untar(FILE *a, const char *path, char *outfolder)
 										}
 										else if (memcmp(lz4_tmp_buff+gg, "\x41\x4e\x44\x52", 4) == 0 && gg == 0) {
 											file_type = 5; /* ANDROID IMG */
-											printf("Filetype VFAT.\n");
+											printf("Filetype IMG.\n");
 											break;
 										}
 									}
