@@ -3,8 +3,8 @@ CFLAGS= -Wall -O3 -Iinclude -Izlib-1.2.9 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_S
 CC=gcc
 STRIP=strip
 
-CCWIN=i586-mingw32msvc-gcc
-CCWINSTRIP=i586-mingw32msvc-strip
+CCWIN=i686-w64-mingw32-gcc
+CCWINSTRIP=i686-w64-mingw32-strip
 
 CCARM=/home/savan/Desktop/gcc-linaro-5.3.1-2016.05-x86_64_arm-linux-gnueabi/bin/arm-linux-gnueabi-gcc
 CCARMSTRIP=/home/savan/Desktop/gcc-linaro-5.3.1-2016.05-x86_64_arm-linux-gnueabi/bin/arm-linux-gnueabi-strip
