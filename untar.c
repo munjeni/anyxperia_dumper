@@ -517,6 +517,7 @@ untar(FILE *a, const char *path, char *outfolder)
 			if (sparse)
 			{
 				unsigned int j;
+				unsigned int done = 0;
 				FILE *in = NULL;
 				FILE *out = NULL;
 
@@ -635,6 +636,15 @@ untar(FILE *a, const char *path, char *outfolder)
 						int lz4_return_value;
 						unsigned long long curr_out_poss = ftello64(out);
 
+						if (ext4_file_size)
+						{
+							if (curr_out_poss >= ext4_file_size)
+							{
+								done = 1;
+								break;
+							}
+						}
+
 						bytes_read = fread(&chunkHeader, 1, sizeof(struct ChunkHeader), in);
 						if (bytes_read < sizeof(struct ChunkHeader)) {
 							printf("Short read ChunkHeader: Expected 0x%lx, got 0x%lx\n", (unsigned long)sizeof(struct ChunkHeader), bytes_read);
@@ -659,10 +669,12 @@ untar(FILE *a, const char *path, char *outfolder)
 						LOG("ChunkHeader ChunkBlocks: 0x%08X\n", chunkHeader.ChunkBlocks);
 						LOG("ChunkHeader ChunkSize: 0x%08X\n", chunkHeader.ChunkSize);
 
+						if (done == 0)
 						switch (chunkHeader.ChunkType)
 						{
 							case CHUNK_TYPE_RAW:
 								LOG("RAW\n\n");
+								LOG("RAW=%llX %llX %lX\n", curr_out_poss, curr_out_poss + sparseHeader.BlockSize, sparseHeader.BlockSize);
 								for (sk = 0; sk < chunkHeader.ChunkBlocks; ++sk)
 								{
 									if ((tmp_buff = (char *)malloc(sparseHeader.BlockSize + 1)) == NULL) {
@@ -771,7 +783,7 @@ untar(FILE *a, const char *path, char *outfolder)
 
 							case CHUNK_TYPE_DONT_CARE:
 								LOG("DONTCARE\n\n");
-								LOG("DONTCARE=%llX\n", curr_out_poss + sparse_data_out_sz);
+								LOG("DONTCARE=%llX %llX %lX\n", curr_out_poss, curr_out_poss + sparse_data_out_sz, sparse_data_out_sz);
 								fseeko64(out, curr_out_poss + sparse_data_out_sz, SEEK_SET);
 								break;
 
@@ -896,8 +908,9 @@ untar(FILE *a, const char *path, char *outfolder)
 				snprintf(tmpp, sizeof(tmpp), "%s/%s.bin", outfolder, basenamee(tmpg));
 
 				if (ext4_file_size)
-{
-					if (ftello64(out) < ext4_file_size) {
+				{
+					if (ftello64(out) < ext4_file_size)
+					{
 						char nn[1];
 						memset(nn, 0, sizeof(nn));
 						fseeko64(out, ext4_file_size - 1, SEEK_SET);
