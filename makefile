@@ -43,49 +43,49 @@ SOURCE=   \
      lz4.c \
      unpackbootimg.c \
      untar.c \
-     kernel_dump.c
+     sony_dump.c
 
-default:kernel_dump.exe kernel_dump.i386 kernel_dump.x86_64 kernel_dump.arm32 kernel_dump.arm64 kernel_dump.x86_64-apple-darwin11 kernel_dump.i386-apple-darwin11 kernel_dump.mips64 kernel_dump.mips32
+default:sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
 
-kernel_dump.exe:
-	${CCWIN} ${CFLAGS} -static ${SOURCE} -o kernel_dump.exe
-	${CCWINSTRIP} kernel_dump.exe
+sony_dump.exe:
+	${CCWIN} ${CFLAGS} -static ${SOURCE} -o sony_dump.exe
+	${CCWINSTRIP} sony_dump.exe
 
-kernel_dump.i386:
-	${CC} -m32 ${CFLAGS} -static ${SOURCE} -o kernel_dump.i386
-	${STRIP} kernel_dump.i386
+sony_dump.i386:
+	${CC} -m32 ${CFLAGS} -static ${SOURCE} -o sony_dump.i386
+	${STRIP} sony_dump.i386
 
-kernel_dump.x86_64:
-	${CC} ${CFLAGS} -static ${SOURCE} -o kernel_dump.x86_64
-	${STRIP} kernel_dump.x86_64
+sony_dump.x86_64:
+	${CC} ${CFLAGS} -static ${SOURCE} -o sony_dump.x86_64
+	${STRIP} sony_dump.x86_64
 
-kernel_dump.arm32:
-	${CCARM} ${CFLAGS} -static ${SOURCE} -o kernel_dump.arm32
-	${CCARMSTRIP} kernel_dump.arm32
+sony_dump.arm32:
+	${CCARM} ${CFLAGS} -static ${SOURCE} -o sony_dump.arm32
+	${CCARMSTRIP} sony_dump.arm32
 
-kernel_dump.arm64:
-	${CCARM64} ${CFLAGS} -static ${SOURCE} -o kernel_dump.arm64
-	${CCARM64STRIP} kernel_dump.arm64
+sony_dump.arm64:
+	${CCARM64} ${CFLAGS} -static ${SOURCE} -o sony_dump.arm64
+	${CCARM64STRIP} sony_dump.arm64
 
-kernel_dump.i386-apple-darwin11:
-	${CCAPPLE} ${CFLAGS} ${SOURCE} -o kernel_dump.i386-apple-darwin11
-	${CCAPPLESTRIP} kernel_dump.i386-apple-darwin11
+sony_dump.i386-apple-darwin11:
+	${CCAPPLE} ${CFLAGS} ${SOURCE} -o sony_dump.i386-apple-darwin11
+	${CCAPPLESTRIP} sony_dump.i386-apple-darwin11
 
-kernel_dump.x86_64-apple-darwin11:
-	${CCAPPLE64} ${CFLAGS} ${SOURCE} -o kernel_dump.x86_64-apple-darwin11
-	${CCAPPLESTRIP64} kernel_dump.x86_64-apple-darwin11
+sony_dump.x86_64-apple-darwin11:
+	${CCAPPLE64} ${CFLAGS} ${SOURCE} -o sony_dump.x86_64-apple-darwin11
+	${CCAPPLESTRIP64} sony_dump.x86_64-apple-darwin11
 
-kernel_dump.mips64:
-	${CCMIPS64} ${CFLAGS} -static ${SOURCE} -o kernel_dump.mips64
-	${CCMIPS64STRIP} kernel_dump.mips64
+sony_dump.mips64:
+	${CCMIPS64} ${CFLAGS} -static ${SOURCE} -o sony_dump.mips64
+	${CCMIPS64STRIP} sony_dump.mips64
 
-kernel_dump.mips32:
-	${CCMIPS} ${CFLAGS} -static ${SOURCE} -o kernel_dump.mips32
-	${CCMIPSSTRIP} kernel_dump.mips32
+sony_dump.mips32:
+	${CCMIPS} ${CFLAGS} -static ${SOURCE} -o sony_dump.mips32
+	${CCMIPSSTRIP} sony_dump.mips32
 
 clean:
-	rm -f kernel_dump.exe kernel_dump.i386 kernel_dump.x86_64 kernel_dump.arm32 kernel_dump.arm64 kernel_dump.x86_64-apple-darwin11 kernel_dump.i386-apple-darwin11 kernel_dump.mips64 kernel_dump.mips32
+	rm -f sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
 
 distclean:
-	rm -f kernel_dump.exe kernel_dump.i386 kernel_dump.x86_64 kernel_dump.arm32 kernel_dump.arm64 kernel_dump.x86_64-apple-darwin11 kernel_dump.i386-apple-darwin11 kernel_dump.mips64 kernel_dump.mips32
+	rm -f sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
 
