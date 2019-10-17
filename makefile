@@ -45,7 +45,7 @@ SOURCE=   \
      untar.c \
      sony_dump.c
 
-default:sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
+default:sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.mips64 sony_dump.mips32
 
 sony_dump.exe:
 	${CCWIN} ${CFLAGS} -static ${SOURCE} -o sony_dump.exe
