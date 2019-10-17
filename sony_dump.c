@@ -78,8 +78,6 @@
 #define fseeko64 fseek
 #endif
 
-//#define EXTERNAL_KERNEL_DUMP
-
 #define ELFMAG0		0x7f	/* Magic number byte 0 */
 #define ELFMAG1		'E'	/* Magic number byte 1 */
 #define ELFMAG2		'L'	/* Magic number byte 2 */
@@ -996,11 +994,7 @@ int extract_elf(char *dest, char *in)
 
 int dump_boot(char* filein, char* fileout);
 
-#ifndef EXTERNAL_KERNEL_DUMP
 int main(int argc, char *argv[])
-#else
-int kernel_dump_main(int argc, char *argv[])
-#endif
 {
 	FILE *fi = NULL;
 	int fld_cbck;
@@ -1008,21 +1002,19 @@ int kernel_dump_main(int argc, char *argv[])
 	char fldren[256];
 	char mkbtfmt[0x121];
 
-#ifndef EXTERNAL_KERNEL_DUMP
 	printf("--------------------------------------------------------\n");
-	printf("       Sony Any kernel Dumper by Munjeni @ 2016         \n");
+	printf("       Sony File Dumper by Munjeni @ 2016         \n");
 	printf("--------------------------------------------------------\n");
-#endif
 
 	if (argc != 3) {
 #if !defined(_WIN32)
-		printf("Syntax: kernel_dump OUTPUT_FOLDER /dev/block/BOOT_PARTITION\n");
+		printf("Syntax: %s OUTPUT_FOLDER /dev/block/BOOT_PARTITION\n", argv[0]);
 #endif
-		printf("Syntax: kernel_dump OUTPUT_FOLDER PATH_TO_THE_BOOT.IMG\n");
-		printf("Syntax: kernel_dump OUTPUT_FOLDER PATH_TO_THE_KERNEL.ELF\n");
-		printf("Syntax: kernel_dump OUTPUT_FOLDER PATH_TO_THE_KERNEL.SIN\n");
-		printf("Syntax: kernel_dump OUTPUT_FOLDER PATH_TO_THE_ANYFILE.SIN\n");
-		printf("To write sin directly to block device: kernel_dump OUTPUT_BLOCKDEV PATH_TO_THE_ANYFILE.SIN\n\n");
+		printf("Syntax: %s OUTPUT_FOLDER PATH_TO_THE_BOOT.IMG\n", argv[0]);
+		printf("Syntax: %s OUTPUT_FOLDER PATH_TO_THE_KERNEL.ELF\n", argv[0]);
+		printf("Syntax: %s OUTPUT_FOLDER PATH_TO_THE_KERNEL.SIN\n", argv[0]);
+		printf("Syntax: %s OUTPUT_FOLDER PATH_TO_THE_ANYFILE.SIN\n", argv[0]);
+		printf("To write sin directly to block device: %s OUTPUT_BLOCKDEV PATH_TO_THE_ANYFILE.SIN\n\n", argv[0]);
 		return 1;
 	}
 
