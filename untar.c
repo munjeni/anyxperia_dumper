@@ -909,7 +909,7 @@ untar(FILE *a, const char *path, char *outfolder)
 
 				if (ext4_file_size)
 				{
-					if (ftello64(out) < ext4_file_size)
+					if (ftello64(out) <= ext4_file_size)
 					{
 						char nn[1];
 						memset(nn, 0, sizeof(nn));
