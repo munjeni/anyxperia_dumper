@@ -914,6 +914,8 @@ untar(FILE *a, const char *path, char *outfolder)
 						char nn[1];
 						memset(nn, 0, sizeof(nn));
 						fseeko64(out, ext4_file_size - 1, SEEK_SET);
+						bytes_read = fread(nn, 1, 1, out);
+						fseeko64(out, ext4_file_size - 1, SEEK_SET);
 						fwrite(nn, 1, 1, out);
 					}
 				}
