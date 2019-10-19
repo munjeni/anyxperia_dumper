@@ -485,7 +485,7 @@ int convert_sin_to_elf(char *filein, char *fileout)
 									printf("|------ Filetype ELF.\n");
 									break;
 								}
-								if (memcmp(new_src+gg, "\x53\xef\x01\x00", 4) == 0) {
+								if (memcmp(new_src+gg, "\x53\xef", 2) == 0) {
 									file_type = 3;  /* EXT4 */
 									ext4_file_size = *(unsigned long long *)&new_src[gg-52] * 4096ULL;
 									if (is_be)
@@ -582,7 +582,7 @@ int convert_sin_to_elf(char *filein, char *fileout)
 									printf("|------ Filetype ELF.\n");
 									break;
 								}
-								if (memcmp(temp_buff+gg, "\x53\xef\x01\x00", 4) == 0) {
+								if (memcmp(temp_buff+gg, "\x53\xef", 2) == 0) {
 									file_type = 3;  /* EXT4 */
 									ext4_file_size = *(unsigned long long *)&temp_buff[gg-52] * 4096ULL;
 									if (is_be)
@@ -618,7 +618,7 @@ int convert_sin_to_elf(char *filein, char *fileout)
 				g = ftello64(elf);
 				if (g < ext4_file_size) {
 					printf("finishing...\n");
-					printf("|--- fill FF 0x%llx\n", ext4_file_size - g);
+					printf("|--- fill 00 0x%llx\n", ext4_file_size - g);
 
 					if ((temp_buff = (char *)malloc(ext4_file_size - g)) == NULL) {
 						printf("Failed to allocate 0x%llx bytes of the memory for FF!\n", ext4_file_size - g);
@@ -627,7 +627,7 @@ int convert_sin_to_elf(char *filein, char *fileout)
 						return 1;
 					}
 
-					memset(temp_buff, 0xff, ext4_file_size - g);
+					memset(temp_buff, 0x00, ext4_file_size - g);
 					fwrite(temp_buff, 1 , ext4_file_size - g, elf);
 					free(temp_buff);
 				}

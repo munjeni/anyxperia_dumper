@@ -717,7 +717,7 @@ untar(FILE *a, const char *path, char *outfolder)
 												printf("Filetype ELF.\n");
 												break;
 											}
-											else if (memcmp(tmp_buff+gg, "\x53\xef\x01\x00", 4) == 0) {
+											else if (memcmp(tmp_buff+gg, "\x53\xef", 2) == 0) {
 												file_type = 3;  /* EXT4 */
 												ext4_file_size = *(unsigned long long *)&tmp_buff[gg-52] * sparseHeader.BlockSize;
 												if (is_be)
@@ -862,7 +862,7 @@ untar(FILE *a, const char *path, char *outfolder)
 											printf("Filetype ELF.\n");
 											break;
 										}
-										else if (memcmp(lz4_tmp_buff+gg, "\x53\xef\x01\x00", 4) == 0) {
+										else if (memcmp(lz4_tmp_buff+gg, "\x53\xef", 2) == 0) {
 											file_type = 3;  /* EXT4 */
 											ext4_file_size = *(unsigned long long *)&lz4_tmp_buff[gg-52] * sparseHeader.BlockSize;
 											if (is_be)
