@@ -233,8 +233,8 @@ int def(FILE *source, FILE *dest, int level)
    is an error reading or writing the files. */
 int inf(FILE *source, FILE *dest)
 {
-	int ret;
-	unsigned have;
+	int ret, progress=0;
+	unsigned long long have;
 	z_stream strm;
 	unsigned char in[CHUNK];
 	unsigned char out[CHUNK];
@@ -269,12 +269,24 @@ int inf(FILE *source, FILE *dest)
 			switch (ret) {
 				case Z_NEED_DICT:
 					ret = Z_DATA_ERROR;     /* and fall through */
+					break;
 				case Z_DATA_ERROR:
 				case Z_MEM_ERROR:
 					(void)inflateEnd(&strm);
 					return ret;
+				default:
+					break;
 			}
 			have = CHUNK - strm.avail_out;
+			if ((have % 4294967296ULL) == 0)
+			{
+				progress += 1;
+				printf(".");
+				if (progress == 60) {
+					progress = 0;
+					printf("\n");
+				}
+			}
 			if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
 				(void)inflateEnd(&strm);
 				return Z_ERRNO;
@@ -286,6 +298,7 @@ int inf(FILE *source, FILE *dest)
 
 	/* clean up and return */
 	(void)inflateEnd(&strm);
+	printf("\n");
 	return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 }
 
@@ -517,7 +530,6 @@ untar(FILE *a, const char *path, char *outfolder)
 			if (sparse)
 			{
 				unsigned int j;
-				unsigned int done = 0;
 				FILE *in = NULL;
 				FILE *out = NULL;
 
@@ -627,23 +639,14 @@ untar(FILE *a, const char *path, char *outfolder)
 					while (si < sparseHeader.TotalChunks)
 					{
 						struct ChunkHeader chunkHeader;
-						unsigned long sj = 0;
+						unsigned long long sj = 0LL;
 						unsigned int sk = 0;
-						unsigned long sparse_data_in_sz = 0;
-						unsigned long sparse_data_out_sz = 0;
+						unsigned long sparse_data_in_sz = 0L;
+						unsigned long long sparse_data_out_sz = 0LL;
 						char *tmp_buff = NULL;
 						char *lz4_tmp_buff = NULL;
 						int lz4_return_value;
 						unsigned long long curr_out_poss = ftello64(out);
-
-						if (ext4_file_size)
-						{
-							if (curr_out_poss >= ext4_file_size)
-							{
-								done = 1;
-								break;
-							}
-						}
 
 						bytes_read = fread(&chunkHeader, 1, sizeof(struct ChunkHeader), in);
 						if (bytes_read < sizeof(struct ChunkHeader)) {
@@ -662,19 +665,17 @@ untar(FILE *a, const char *path, char *outfolder)
 						}
 
 						sparse_data_in_sz = chunkHeader.ChunkSize - sparseHeader.ChunkHeaderSize;
-						sparse_data_out_sz = chunkHeader.ChunkBlocks * sparseHeader.BlockSize;
+						sparse_data_out_sz = (chunkHeader.ChunkBlocks + 0LL) * (sparseHeader.BlockSize + 0LL);
 
 						LOG("ChunkHeader ChunkType: 0x%04X\n", chunkHeader.ChunkType);
 						LOG("ChunkHeader Reserved: 0x%04X\n", chunkHeader.Reserved);
 						LOG("ChunkHeader ChunkBlocks: 0x%08X\n", chunkHeader.ChunkBlocks);
 						LOG("ChunkHeader ChunkSize: 0x%08X\n", chunkHeader.ChunkSize);
 
-						if (done == 0)
 						switch (chunkHeader.ChunkType)
 						{
 							case CHUNK_TYPE_RAW:
-								LOG("RAW\n\n");
-								LOG("RAW=%llX %llX %lX\n", curr_out_poss, curr_out_poss + sparseHeader.BlockSize, sparseHeader.BlockSize);
+								LOG("RAW NOW=%llX\n", curr_out_poss);
 								for (sk = 0; sk < chunkHeader.ChunkBlocks; ++sk)
 								{
 									if ((tmp_buff = (char *)malloc(sparseHeader.BlockSize + 1)) == NULL) {
@@ -741,10 +742,11 @@ untar(FILE *a, const char *path, char *outfolder)
 
 									free(tmp_buff);
 								}
+								LOG("RAW END=%llX\n\n", curr_out_poss);
 								break;
 
 							case CHUNK_TYPE_FILL:
-								LOG("FILL\n\n");
+								LOG("FILL NOW=%llX\n", curr_out_poss);
 								if ((tmp_buff = (char *)malloc(sparse_data_in_sz + 1)) == NULL) {
 									printf("Error in CHUNK_TYPE_FILL, error allocating memory of the 0x%lx bytes for temp_buff!\n", sparse_data_in_sz);
 									fclose(f);
@@ -779,12 +781,14 @@ untar(FILE *a, const char *path, char *outfolder)
 								}
 
 								free(tmp_buff);
+								LOG("FILL END=%llX\n\n", curr_out_poss);
 								break;
 
 							case CHUNK_TYPE_DONT_CARE:
-								LOG("DONTCARE\n\n");
-								LOG("DONTCARE=%llX %llX %lX\n", curr_out_poss, curr_out_poss + sparse_data_out_sz, sparse_data_out_sz);
-								fseeko64(out, curr_out_poss + sparse_data_out_sz, SEEK_SET);
+								LOG("DONTCARE NOW=%llX\n", curr_out_poss);
+								curr_out_poss += sparse_data_out_sz;
+								fseeko64(out, curr_out_poss, SEEK_SET);
+								LOG("DONTCARE END=%llX\n\n", curr_out_poss);
 								break;
 
 							case CHUNK_TYPE_CRC32:
@@ -793,7 +797,7 @@ untar(FILE *a, const char *path, char *outfolder)
 								break;
 
 							case CHUNK_TYPE_LZ4:
-								LOG("LZ4\n\n");
+								LOG("LZ4 NOW=%llX\n", curr_out_poss);
 								if ((tmp_buff = (char *)malloc(sparse_data_in_sz + 1)) == NULL) {
 									printf("Error in CHUNK_TYPE_LZ4, error allocating memory of the 0x%lx bytes for temp_buff!\n", sparse_data_in_sz);
 									fclose(f);
@@ -802,8 +806,8 @@ untar(FILE *a, const char *path, char *outfolder)
 									return;
 								}
 
-								if ((lz4_tmp_buff = (char *)malloc(sparse_data_out_sz + 1)) == NULL) {
-									printf("Error in CHUNK_TYPE_LZ4, error allocating memory of the 0x%lx bytes for lz4_temp_buff!\n", sparse_data_out_sz);
+								if ((lz4_tmp_buff = (char *)malloc((unsigned long)sparse_data_out_sz + 1)) == NULL) {
+									printf("Error in CHUNK_TYPE_LZ4, error allocating memory of the 0x%lx bytes for lz4_temp_buff!\n", (unsigned long)sparse_data_out_sz);
 									fclose(f);
 									fclose(in);
 									fclose(out);
@@ -822,7 +826,7 @@ untar(FILE *a, const char *path, char *outfolder)
 									return;
 								}
 
-								lz4_return_value = LZ4_decompress_safe(tmp_buff, lz4_tmp_buff, sparse_data_in_sz, sparse_data_out_sz);
+								lz4_return_value = LZ4_decompress_safe(tmp_buff, lz4_tmp_buff, sparse_data_in_sz, (unsigned long)sparse_data_out_sz);
 
 								if (lz4_return_value < 0)
 									printf("A negative result from LZ4_decompress_fast indicates a failure trying to decompress the data.  See exit code (echo $?) for value returned!\n");
@@ -840,9 +844,9 @@ untar(FILE *a, const char *path, char *outfolder)
 								}
 
 								LOG("LZ4=%llX\n", curr_out_poss + sparse_data_out_sz);
-								bytes_write = fwrite(lz4_tmp_buff, 1, sparse_data_out_sz, out);
-								if (bytes_write < sparse_data_out_sz) {
-									printf("Error in CHUNK_TYPE_LZ4, error writing 0x%lx bytes from lz4_temp_buff, done 0x%lx!\n", sparse_data_out_sz, bytes_write);
+								bytes_write = fwrite(lz4_tmp_buff, 1, (unsigned long)sparse_data_out_sz, out);
+								if (bytes_write < (unsigned long)sparse_data_out_sz) {
+									printf("Error in CHUNK_TYPE_LZ4, error writing 0x%lx bytes from lz4_temp_buff, done 0x%lx!\n", (unsigned long)sparse_data_out_sz, bytes_write);
 									fclose(f);
 									fclose(in);
 									fclose(out);
@@ -854,8 +858,8 @@ untar(FILE *a, const char *path, char *outfolder)
 
 								if (j == 0 && !searched)
 								{
-									unsigned int gg;
-									for (gg=0; gg<sparse_data_out_sz - 4; ++gg)
+									unsigned long gg;
+									for (gg=0; gg < (unsigned long)sparse_data_out_sz - 4; ++gg)
 									{
 										if (memcmp(lz4_tmp_buff+gg, "\x7f\x45\x4c\x46", 4) == 0 && gg == 0) {
 											file_type = 2; /* ELF */
@@ -886,6 +890,7 @@ untar(FILE *a, const char *path, char *outfolder)
 
 								free(tmp_buff);
 								free(lz4_tmp_buff);
+								LOG("LZ4 END=%llX\n\n", curr_out_poss);
 								break;
 
 							default:
