@@ -45,7 +45,7 @@ SOURCE=   \
      untar.c \
      sony_dump.c
 
-default:download sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
+default:download sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm32_pie sony_dump.arm64 sony_dump.arm64_pie sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32 archive
 
 download:
 	@if [ ! -d "zlib-1.2.11" ]; then wget https://zlib.net/zlib-1.2.11.tar.gz ; tar xzf zlib-1.2.11.tar.gz ; rm -rf zlib-1.2.11.tar.gz ; fi
@@ -66,9 +66,17 @@ sony_dump.arm32:
 	${CCARM} ${CFLAGS} -static ${SOURCE} -o sony_dump.arm32
 	${CCARMSTRIP} sony_dump.arm32
 
+sony_dump.arm32_pie:
+	@cp -fr sony_dump.arm32 sony_dump.arm32_pie
+	@dd if=pie of=sony_dump.arm32_pie bs=1 count=1 seek=16 conv=notrunc
+
 sony_dump.arm64:
 	${CCARM64} ${CFLAGS} -static ${SOURCE} -o sony_dump.arm64
 	${CCARM64STRIP} sony_dump.arm64
+
+sony_dump.arm64_pie:
+	@cp -fr sony_dump.arm64 sony_dump.arm64_pie
+	@dd if=pie of=sony_dump.arm64_pie bs=1 count=1 seek=16 conv=notrunc
 
 sony_dump.i386-apple-darwin11:
 	${CCAPPLE} ${CFLAGS} ${SOURCE} -o sony_dump.i386-apple-darwin11
@@ -86,9 +94,12 @@ sony_dump.mips32:
 	${CCMIPS} ${CFLAGS} -static ${SOURCE} -o sony_dump.mips32
 	${CCMIPSSTRIP} sony_dump.mips32
 
+archive:
+	@zip -9 sony_dump_tool.zip sony_dump.arm32_pie sony_dump.arm64_pie sony_dump.exe sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.x86_64-apple-darwin11 sony_dump.arm32 sony_dump.arm64 sony_dump.i386 sony_dump.mips32 sony_dump.x86_64
+
 clean:
-	rm -f sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
+	rm -rf sony_dump_tool.zip sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm32_pie sony_dump.arm64 sony_dump.arm64_pie sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
 
 distclean:
-	rm -rf zlib-1.2.11 sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
+	rm -rf sony_dump_tool.zip zlib-1.2.11 sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm32_pie sony_dump.arm64 sony_dump.arm64_pie sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
 
