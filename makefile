@@ -1,4 +1,4 @@
-CFLAGS= -Wall -O2 -Iinclude -Izlib-1.2.9 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE=1
+CFLAGS= -Wall -O2 -Iinclude -Izlib-1.2.11 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE=1
 
 CC=gcc
 STRIP=strip
@@ -9,8 +9,8 @@ CCWINSTRIP=i686-w64-mingw32-strip
 CCARM=/home/savan/Desktop/gcc-linaro-5.3.1-2016.05-x86_64_arm-linux-gnueabi/bin/arm-linux-gnueabi-gcc
 CCARMSTRIP=/home/savan/Desktop/gcc-linaro-5.3.1-2016.05-x86_64_arm-linux-gnueabi/bin/arm-linux-gnueabi-strip
 
-CCARM64=/home/savan/Desktop/qemu/busybox-1.23.2/busybox-1.23.2/busybox-w32/buildroot-2017.02.2/output/host/usr/bin/aarch64-buildroot-linux-uclibc-gcc
-CCARM64STRIP=/home/savan/Desktop/qemu/busybox-1.23.2/busybox-1.23.2/busybox-w32/buildroot-2017.02.2/output/host/usr/bin/aarch64-buildroot-linux-uclibc-strip
+CCARM64=/home/savan/Desktop/gcc-linaro-5.3.1-2016.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc
+CCARM64STRIP=/home/savan/Desktop/gcc-linaro-5.3.1-2016.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-strip
 
 CCAPPLE64=/home/savan/Desktop/osxtoolchain/osxcross/target/bin/x86_64-apple-darwin11-cc
 CCAPPLESTRIP64=/home/savan/Desktop/osxtoolchain/osxcross/target/bin/x86_64-apple-darwin11-strip
@@ -25,27 +25,30 @@ CCMIPS=/home/savan/Desktop/buildroot-2018.02.2/output/host/usr/bin/mips-buildroo
 CCMIPSSTRIP=/home/savan/Desktop/buildroot-2018.02.2/output/host/usr/bin/mips-buildroot-linux-uclibc-strip
 
 SOURCE=   \
-     zlib-1.2.9/adler32.c \
-     zlib-1.2.9/crc32.c \
-     zlib-1.2.9/deflate.c \
-     zlib-1.2.9/infback.c \
-     zlib-1.2.9/inffast.c \
-     zlib-1.2.9/inflate.c \
-     zlib-1.2.9/inftrees.c \
-     zlib-1.2.9/trees.c \
-     zlib-1.2.9/zutil.c \
-     zlib-1.2.9/compress.c \
-     zlib-1.2.9/uncompr.c \
-     zlib-1.2.9/gzclose.c \
-     zlib-1.2.9/gzlib.c \
-     zlib-1.2.9/gzread.c \
-     zlib-1.2.9/gzwrite.c \
+     zlib-1.2.11/adler32.c \
+     zlib-1.2.11/crc32.c \
+     zlib-1.2.11/deflate.c \
+     zlib-1.2.11/infback.c \
+     zlib-1.2.11/inffast.c \
+     zlib-1.2.11/inflate.c \
+     zlib-1.2.11/inftrees.c \
+     zlib-1.2.11/trees.c \
+     zlib-1.2.11/zutil.c \
+     zlib-1.2.11/compress.c \
+     zlib-1.2.11/uncompr.c \
+     zlib-1.2.11/gzclose.c \
+     zlib-1.2.11/gzlib.c \
+     zlib-1.2.11/gzread.c \
+     zlib-1.2.11/gzwrite.c \
      lz4.c \
      unpackbootimg.c \
      untar.c \
      sony_dump.c
 
-default:sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
+default:download sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
+
+download:
+	@if [ ! -d "zlib-1.2.11" ]; then wget https://zlib.net/zlib-1.2.11.tar.gz ; tar xzf zlib-1.2.11.tar.gz ; rm -rf zlib-1.2.11.tar.gz ; fi
 
 sony_dump.exe:
 	${CCWIN} ${CFLAGS} -static ${SOURCE} -o sony_dump.exe
@@ -87,5 +90,5 @@ clean:
 	rm -f sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
 
 distclean:
-	rm -f sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
+	rm -rf zlib-1.2.11 sony_dump.exe sony_dump.i386 sony_dump.x86_64 sony_dump.arm32 sony_dump.arm64 sony_dump.x86_64-apple-darwin11 sony_dump.i386-apple-darwin11 sony_dump.mips64 sony_dump.mips32
 
